@@ -4,6 +4,7 @@ const express = require("express"),
   app = express(),
   getAllPosts = express.Router(),
   getOnePost = express.Router(),
+  postOnePost = express.Router(),
   setOnePost = express.Router(),
   //eftersom filen ligger där den ligger och vi kör visualstudio code 
   //från nivån ovanför så använder vi dirname för att hitta rätt
@@ -93,6 +94,51 @@ getOnePost.route('/posts/:postId')
     
   });
 
+  postOnePost.route('/setPost')
+  .post((req, res) => {
+    posterName = req.query.posterName;
+     posterEmail = req.query.posterEmail;
+     posterIpAddress = req.ip;
+     postBody = req.query.postBody;
+    const fs = require('fs');
+    //skapa posts här eftersom den behövs i flera scoope
+    let posts;
+
+    var requestIp = require('request-ip');
+
+    let ip = req.header('x-forwarded-for') || req.socket.remoteAddress;
+
+    var clientIp = requestIp.getClientIp(req);
+
+    console.log(ip);
+
+    fs.readFile(reposorypath, (err, data) => {
+      if (err) throw err;
+      posts = JSON.parse(data);
+      //console.log(JSON.stringify(posts, null, 2));
+      
+      //Vi måste hämta senaste id:t för att kunna lägga till nästa i ordningen
+      let newPostId = 0;
+      Object.values(posts)[0].forEach(element => {if(element.postId>newPostId) {newPostId = element.postId;}}); 
+
+      //skapa timestamt för att lägga till
+      const timestamp = new Date().toISOString();
+   
+      //lägg till ett objekt i arrayen
+      posts['posts'].push({"postId": newPostId+1, "posterName": `${req.query.posterName}`, "posterEmail": `${req.query.posterEmail}`, "posterIpAddress": `${req.query.posterIpAddress}`, "postBody": `${req.query.postBody}`,"postTimestamp":`${timestamp}`});
+      data = JSON.stringify(posts);
+
+      //spara tillbaka datat i filen
+      fs.writeFile(reposorypath, JSON.stringify(posts, null, 2), (err) => {
+      if (err) console.log(err);
+      console.log("Successfully Written to File.");
+    });
+    res.json(posts);
+    });
+    
+  });
+
+
 
 //Här är det viktigt att sätta upp routen i rätt ordning
 //Man måste ha längsta routen först vill jag minnas. Annars
@@ -105,6 +151,7 @@ app.use('/api/v1', getOnePost);
 //posts
 app.use('/api/v1', getAllPosts);
 
+app.use('/api/v1', postOnePost)
 
 
 app.get("/", (req, res) => {
