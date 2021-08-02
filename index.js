@@ -6,6 +6,9 @@ const express = require("express"),
   getOnePost = express.Router(),
   postOnePost = express.Router(),
   setOnePost = express.Router(),
+  deleteLastPost = express.Router(),
+  //bodyParser = require('body-parser'), //bör tydligen inte användas längre, deprecated...
+
   //eftersom filen ligger där den ligger och vi kör visualstudio code 
   //från nivån ovanför så använder vi dirname för att hitta rätt
   reposorypath = `${__dirname}/../test.json`,
@@ -96,10 +99,10 @@ getOnePost.route('/posts/:postId')
 
   postOnePost.route('/setPost')
   .post((req, res) => {
-    posterName = req.query.posterName;
-     posterEmail = req.query.posterEmail;
+    posterName = req.body.posterName;
+     posterEmail = req.body.posterEmail;
      posterIpAddress = req.ip;
-     postBody = req.query.postBody;
+     postBody = req.body.postBody;
     const fs = require('fs');
     //skapa posts här eftersom den behövs i flera scoope
     let posts;
@@ -125,7 +128,7 @@ getOnePost.route('/posts/:postId')
       const timestamp = new Date().toISOString();
    
       //lägg till ett objekt i arrayen
-      posts['posts'].push({"postId": newPostId+1, "posterName": `${req.query.posterName}`, "posterEmail": `${req.query.posterEmail}`, "posterIpAddress": `${req.query.posterIpAddress}`, "postBody": `${req.query.postBody}`,"postTimestamp":`${timestamp}`});
+      posts['posts'].push({"postId": newPostId+1, "posterName": `${posterName}`, "posterEmail": `${posterEmail}`, "posterIpAddress": `${posterIpAddress}`, "postBody": `${postBody}`,"postTimestamp":`${timestamp}`});
       data = JSON.stringify(posts);
 
       //spara tillbaka datat i filen
@@ -138,11 +141,48 @@ getOnePost.route('/posts/:postId')
     
   });
 
+  deleteLastPost.route("/deleteLastPost")
+  .delete((req, res) => {
+    const fs = require('fs');
+    fs.readFile(reposorypath, (err, data) => {
+      if (err) throw err;
+      let posts = JSON.parse(data);
+      //console.log(JSON.stringify(posts, null, 2));
+      
+      //Vi måste hämta senaste id:t för att kunna ta bort det ur arrayen
+      let newPostId = 0;
+      Object.values(posts)[0].forEach(element => {if(element.postId>newPostId) {newPostId = element.postId;}});
+   
+
+      //skapa timestamt för att lägga till
+      const timestamp = new Date().toISOString();
+   
+      //lägg till ett objekt i arrayen
+      var filtered = [];
+      Object.values(posts)[0].forEach(filter => {if(filter.postId != newPostId) {filtered.push(filter);}}); 
+      data = JSON.stringify(`{posts:${filtered}}`);
+
+      //spara tillbaka datat i filen
+      fs.writeFile(reposorypath, 
+`{
+  "posts":
+         ${JSON.stringify(filtered, null, 2)}
+}`, (err) => 
+    {
+      if (err) console.log(err);
+      console.log("Successfully Written to File.");
+    });
+    res.json(filtered);
+    });
+    
+  });
 
 
 //Här är det viktigt att sätta upp routen i rätt ordning
 //Man måste ha längsta routen först vill jag minnas. Annars
 //kan url:en bli stulen
+//---------------------------------------------------------
+//GET
 //---------------------------------------------------------
 //posts/addPost
 app.use('/api/v1', setOnePost);
@@ -150,13 +190,26 @@ app.use('/api/v1', setOnePost);
 app.use('/api/v1', getOnePost);
 //posts
 app.use('/api/v1', getAllPosts);
+///---------------------------------------------------------
+//POST
+//---------------------------------------------------------
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
+//setPost
+app.use('/api/v1', postOnePost);
 
-app.use('/api/v1', postOnePost)
+app.use('/api/v1', deleteLastPost);
 
+
+
+app.get("/api/v1", (req, res) => {
+
+  res.send("Hej och välkommen till mitt api");
+});
 
 app.get("/", (req, res) => {
 
-  res.send("Hej och välkommen till mitt api");
+  res.send("API ligger under /api/v1");
 });
 
 app.listen(port, () => {
