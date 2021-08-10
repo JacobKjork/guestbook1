@@ -12,11 +12,13 @@ const express = require("express"),
   //eftersom filen ligger där den ligger och vi kör visualstudio code 
   //från nivån ovanför så använder vi dirname för att hitta rätt
   reposorypath = `${__dirname}/../test.json`,
-  port = process.env.PORT || 3000;
+  port = process.env.PORT || 5000;
 
 // första routen för att hämnta alla poster
 getAllPosts.route('/posts')
   .get((req, res) => {
+    //res.header("Access-Control-Allow-Origin", "*");
+    console.log("set header");
     const fs = require('fs');
 
     fs.readFile(reposorypath, (err, data) => {
@@ -26,7 +28,9 @@ getAllPosts.route('/posts')
       res.json(posts);
     });
   });
+function b(){
 
+}
 //en route för att hämta en post med ett särskilt id (inte med i uppgiften)
 getOnePost.route('/posts/:postId')
   .get((req, res) => {
@@ -176,7 +180,11 @@ getOnePost.route('/posts/:postId')
     });
     
   });
-
+  app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+  });
 
 //Här är det viktigt att sätta upp routen i rätt ordning
 //Man måste ha längsta routen först vill jag minnas. Annars
@@ -199,6 +207,9 @@ app.use(express.json());
 app.use('/api/v1', postOnePost);
 
 app.use('/api/v1', deleteLastPost);
+
+
+
 
 
 

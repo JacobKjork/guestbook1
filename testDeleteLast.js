@@ -1,7 +1,7 @@
 const axios = require('axios')
 
 axios
-  .delete('http://localhost:3000/api/v1/deleteLastPost', {
+  .delete('http://localhost:4000/api/v1/deleteLastPost', {
     posterName: `Jacob Kjörk`, 
     posterEmail: `jacob.kjork@dooer.com`,
     postBody: `Detta är ett meddelande från en postrequest`
