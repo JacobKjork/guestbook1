@@ -12,7 +12,7 @@ const express = require("express"),
   //eftersom filen ligger där den ligger och vi kör visualstudio code 
   //från nivån ovanför så använder vi dirname för att hitta rätt
   reposorypath = `${__dirname}/../test.json`,
-  port = process.env.PORT || 5000;
+  port = process.env.PORT || 3000;
 
 // första routen för att hämnta alla poster
 getAllPosts.route('/posts')
