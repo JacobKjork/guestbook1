@@ -7,11 +7,14 @@ const express = require("express"),
   postOnePost = express.Router(),
   setOnePost = express.Router(),
   deleteLastPost = express.Router(),
+  getAllUsers = express.Router(),
+  setOneUser = express.Router(),
   //bodyParser = require('body-parser'), //bör tydligen inte användas längre, deprecated...
 
   //eftersom filen ligger där den ligger och vi kör visualstudio code 
   //från nivån ovanför så använder vi dirname för att hitta rätt
-  reposorypath = `${__dirname}/../test.json`,
+  reposorypath = `${__dirname}/../posts.json`,
+  reposorypathUsers = `${__dirname}/../users.json`,
   port = process.env.PORT || 3000;
 
 // första routen för att hämnta alla poster
@@ -28,9 +31,7 @@ getAllPosts.route('/posts')
       res.json(posts);
     });
   });
-function b(){
 
-}
 //en route för att hämta en post med ett särskilt id (inte med i uppgiften)
 getOnePost.route('/posts/:postId')
   .get((req, res) => {
@@ -107,6 +108,7 @@ getOnePost.route('/posts/:postId')
      posterEmail = req.body.posterEmail;
      posterIpAddress = req.ip;
      postBody = req.body.postBody;
+     postPostedBy = req.body.postPostedBy;
     const fs = require('fs');
     //skapa posts här eftersom den behövs i flera scoope
     let posts;
@@ -132,7 +134,7 @@ getOnePost.route('/posts/:postId')
       const timestamp = new Date().toISOString();
    
       //lägg till ett objekt i arrayen
-      posts['posts'].push({"postId": newPostId+1, "posterName": `${posterName}`, "posterEmail": `${posterEmail}`, "posterIpAddress": `${posterIpAddress}`, "postBody": `${postBody}`,"postTimestamp":`${timestamp}`});
+      posts['posts'].push({"postId": newPostId+1, "posterName": `${posterName}`, "posterEmail": `${posterEmail}`, "posterIpAddress": `${posterIpAddress}`, "postBody": `${postBody}`,"postTimestamp":`${timestamp}`,"postPostedBy":`${postPostedBy}`});
       data = JSON.stringify(posts);
 
       //spara tillbaka datat i filen
@@ -186,6 +188,65 @@ getOnePost.route('/posts/:postId')
     next();
   });
 
+  //////////////////////
+  //Users
+  /////////////////////
+  //
+  //
+  getAllUsers.route('/users')
+  .get((req, res) => {
+    
+    console.log("set  i user");
+    const fs = require('fs');
+
+    fs.readFile(reposorypathUsers, (err, data) => {
+      if (err) throw err;
+      let users = JSON.parse(data);
+      //console.log(JSON.stringify(posts, null, 2));
+      res.json(users);
+    });
+  });
+/////////////////
+setOneUser.route('/setUser')
+  .post((req, res) => {
+     userName = req.body.userName;
+     userEmail = req.body.userEmail;
+     userAvatar = req.body.userAvatar;
+    const fs = require('fs');
+    //skapa posts här eftersom den behövs i flera scoope
+    let posts;
+
+    var requestIp = require('request-ip');
+
+    let ip = req.header('x-forwarded-for') || req.socket.remoteAddress;
+
+    var clientIp = requestIp.getClientIp(req);
+
+    console.log(ip);
+
+    fs.readFile(reposorypathUsers, (err, data) => {
+      if (err) throw err;
+      users = JSON.parse(data);
+      //console.log(JSON.stringify(posts, null, 2));
+      
+      //Vi måste hämta senaste id:t för att kunna lägga till nästa i ordningen
+      let newUserId = 0;
+      Object.values(users)[0].forEach(element => {if(element.userId>newUserId) {newUserId = element.userId;}}); 
+   
+      //lägg till ett objekt i arrayen
+      users['users'].push({"userId": newUserId+1, "userName": `${userName}`, "userEmail": `${userEmail}`, "userAvatar": `${userAvatar}`});
+      data = JSON.stringify(users);
+
+      //spara tillbaka datat i filen
+      fs.writeFile(reposorypathUsers, JSON.stringify(users, null, 2), (err) => {
+      if (err) console.log(err);
+      console.log("Successfully Written to File.");
+    });
+    res.json(users);
+    });
+    
+  });
+
 //Här är det viktigt att sätta upp routen i rätt ordning
 //Man måste ha längsta routen först vill jag minnas. Annars
 //kan url:en bli stulen
@@ -207,6 +268,11 @@ app.use(express.json());
 app.use('/api/v1', postOnePost);
 
 app.use('/api/v1', deleteLastPost);
+
+
+app.use('/api/v1', getAllUsers);
+
+app.use('/api/v1',setOneUser);
 
 
 
